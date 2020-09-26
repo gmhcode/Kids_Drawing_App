@@ -19,10 +19,9 @@
         app:layout_constraintBottom_toTopOf="@id/ll_paint_colors"
         >
         <ImageView
-            android:id="@+id/ic_background"
+            android:id="@+id/iv_background"
             android:scaleType="centerCrop"
             android:contentDescription="background Image"
-            android:src="@drawable/image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
         <!--    This is where we set the drawing view -->
