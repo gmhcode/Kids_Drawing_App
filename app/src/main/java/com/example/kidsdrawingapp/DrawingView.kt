@@ -19,10 +19,20 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     private var color = Color.BLACK
     var canvas: Canvas? = null
     private val mPaths = ArrayList<CustomPath>()
+    private val mUndoPaths = ArrayList<CustomPath>()
 
     init{
         setUpDrawing()
     }
+
+    fun onClickUndo(){
+        if(mPaths.size > 0) {
+            mUndoPaths.add(mPaths.removeAt(mPaths.size - 1))
+            //Calling invalide calls onDraw again
+            invalidate()
+        }
+    }
+
     private fun setUpDrawing() {
         mDrawPaint = Paint()
         mDrawPath = CustomPath(color,mBrushSize)
@@ -84,6 +94,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             else -> return false
 
         }
+        //Calling invalide calls onDraw again
         invalidate()
         return true
     }
