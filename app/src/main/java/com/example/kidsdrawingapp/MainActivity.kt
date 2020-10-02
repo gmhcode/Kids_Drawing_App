@@ -6,6 +6,8 @@ import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.media.MediaScannerConnection
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -20,6 +22,12 @@ import androidx.core.view.get
 import androidx.lifecycle.ViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.dialog_brush_size.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -56,6 +64,13 @@ class MainActivity : AppCompatActivity() {
         }
         ib_undo.setOnClickListener {
             drawing_view.onClickUndo()
+        }
+        ib_save.setOnClickListener {
+            if(isReadStorageAllowed()){
+                BitmapAsyncTask(getBitmapFromView(drawing_view)).execute()
+            }else {
+                requestStoragePermission()
+            }
         }
     }
 
@@ -154,11 +169,17 @@ class MainActivity : AppCompatActivity() {
     }
     private inner class BitmapAsyncTask(val mBitmap: Bitmap): ViewModel(){
 
-//        fun execute() = viewModelScope.launch {
-//            onPreExecute()
-//            val result = doInBackground()
-//            onPostExecute(result)
-//        }
+        fun execute()  {
+
+                onPreExecute()
+            CoroutineScope(IO).launch {
+                val result = doInBackground()
+                withContext(Main) {
+                    onPostExecute(result)
+                }
+            }
+
+        }
 
         private lateinit var mProgressDialog: Dialog
 
@@ -166,27 +187,27 @@ class MainActivity : AppCompatActivity() {
             showProgressDialog()
         }
 
-//        private suspend fun doInBackground(): String = withContext(Dispatchers.IO) {
-//
-//            var result = ""
-//
-//            if(mBitmap != null){
-//                try{
-//                    val bytes = ByteArrayOutputStream()
-//                    mBitmap.compress(Bitmap.CompressFormat.PNG, 90, bytes)
-//                    val f = File(externalCacheDir!!.absoluteFile.toString() + File.separator + "KidsDrawingApp_" + System.currentTimeMillis() / 1000 + ".png")
-//                    val fos = FileOutputStream(f)
-//                    fos.write(bytes.toByteArray())
-//                    fos.close()
-//                    result = f.absolutePath
-//
-//                } catch (e: Exception){
-//                    result = ""
-//                    e.printStackTrace()
-//                }
-//            }
-//            return@withContext result
-//        }
+        private suspend fun doInBackground(): String = withContext(Dispatchers.IO) {
+
+            var result = ""
+
+            if(mBitmap != null){
+                try{
+                    val bytes = ByteArrayOutputStream()
+                    mBitmap.compress(Bitmap.CompressFormat.PNG, 90, bytes)
+                    val f = File(externalCacheDir!!.absoluteFile.toString() + File.separator + "KidsDrawingApp_" + System.currentTimeMillis() / 1000 + ".png")
+                    val fos = FileOutputStream(f)
+                    fos.write(bytes.toByteArray())
+                    fos.close()
+                    result = f.absolutePath
+
+                } catch (e: Exception){
+                    result = ""
+                    e.printStackTrace()
+                }
+            }
+            return@withContext result
+        }
 
         private fun onPostExecute(result: String?) {
             cancelDialog()
@@ -226,6 +247,28 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
+    private fun getBitmapFromView(view: View): Bitmap {
+
+        //Define a bitmap with the same size as the view.
+        // CreateBitmap : Returns a mutable bitmap with the specified width and height
+        val returnedBitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        //Bind a canvas to it
+        val canvas = Canvas(returnedBitmap)
+        //Get the view's background
+        val bgDrawable = view.background
+        if (bgDrawable != null) {
+            //has background drawable, then draw it on the canvas
+            bgDrawable.draw(canvas)
+        } else {
+            //does not have background drawable, then draw white background on the canvas
+            canvas.drawColor(Color.WHITE)
+        }
+        // draw the view on the canvas
+        view.draw(canvas)
+        //return the bitmap
+        return returnedBitmap
+    }
+
     companion object {
         private const val STORAGE_PERMISSION_CODE = 1
         private const val GALLERY = 2
